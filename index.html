@@ -72,6 +72,11 @@
         <div class="result" id="result">
             Нажмите кнопку выше, чтобы протестировать метод
         </div>
+        
+        <div class="result" id="debug" style="margin-top: 10px; font-size: 12px; text-align: left; max-height: 200px; overflow-y: auto;">
+            <strong>Отладочная информация:</strong><br>
+            <span id="debug-info">Пока нет данных...</span>
+        </div>
     </div>
 
     <script>
@@ -79,42 +84,80 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
         
+        // Функция для вывода отладочной информации в интерфейс
+        function debugLog(message) {
+            const debugInfo = document.getElementById('debug-info');
+            debugInfo.innerHTML += message + '<br>';
+        }
+        
+        // Функция для очистки отладочной информации
+        function clearDebug() {
+            document.getElementById('debug-info').innerHTML = '';
+        }
+        
         // Функция для тестирования requestContact
         function testRequestContact() {
             const resultDiv = document.getElementById('result');
+            clearDebug();
+            
             resultDiv.innerHTML = 'Запрос отправлен... Ждем ответа пользователя';
+            
+            debugLog('=== НАЧАЛО ОТЛАДКИ ===');
+            debugLog('Telegram WebApp version: ' + tg.version);
+            debugLog('Доступные методы TG: ' + Object.keys(tg).join(', '));
             
             // Проверяем, доступен ли метод
             if (typeof tg.requestContact === 'function') {
+                debugLog('✅ Метод requestContact доступен');
+                
                 try {
                     // Вызываем метод с callback функцией
-                    tg.requestContact(function(granted) {
+                    tg.requestContact(function(granted, contactData) {
+                        debugLog('Callback вызван!');
+                        debugLog('granted: ' + granted);
+                        debugLog('contactData: ' + JSON.stringify(contactData));
+                        debugLog('tg.initDataUnsafe: ' + JSON.stringify(tg.initDataUnsafe));
+                        
                         if (granted) {
-                            // Получаем номер телефона из объекта контакта
-                            const contact = tg.initDataUnsafe?.user?.phone_number || 
-                                          tg.initData?.user?.phone_number || 
-                                          'Номер недоступен';
+                            // Пробуем разные способы получить номер
+                            let phoneNumber = 'Номер недоступен';
                             
-                            resultDiv.innerHTML = `✅ Пользователь поделился номером телефона!<br><br><strong>Ваш номер телефона: ${contact}</strong>`;
+                            // Способ 1: из параметра callback
+                            if (contactData && contactData.phone_number) {
+                                phoneNumber = contactData.phone_number;
+                                debugLog('📱 Номер найден в contactData: ' + phoneNumber);
+                            }
+                            // Способ 2: из initDataUnsafe
+                            else if (tg.initDataUnsafe?.user?.phone_number) {
+                                phoneNumber = tg.initDataUnsafe.user.phone_number;
+                                debugLog('📱 Номер найден в initDataUnsafe: ' + phoneNumber);
+                            }
+                            else {
+                                debugLog('❌ Номер не найден ни в одном из источников');
+                            }
+                            
+                            resultDiv.innerHTML = `✅ Пользователь поделился номером телефона!<br><br><strong>Ваш номер телефона: ${phoneNumber}</strong>`;
                             resultDiv.style.backgroundColor = '#d4edda';
                             resultDiv.style.color = '#155724';
                             
-                            // Дополнительно выводим в консоль для отладки
-                            console.log('Contact granted!');
-                            console.log('User data:', tg.initDataUnsafe?.user);
-                            console.log('Phone number:', contact);
                         } else {
+                            debugLog('❌ Пользователь отказался делиться номером');
                             resultDiv.innerHTML = '❌ Пользователь отказался делиться номером';
                             resultDiv.style.backgroundColor = '#f8d7da';
                             resultDiv.style.color = '#721c24';
                         }
                     });
+                    
+                    debugLog('✅ Метод requestContact вызван успешно');
+                    
                 } catch (error) {
+                    debugLog('❌ Ошибка при вызове метода: ' + error.message);
                     resultDiv.innerHTML = '❌ Ошибка при вызове метода: ' + error.message;
                     resultDiv.style.backgroundColor = '#f8d7da';
                     resultDiv.style.color = '#721c24';
                 }
             } else {
+                debugLog('❌ Метод requestContact недоступен');
                 resultDiv.innerHTML = '❌ Метод requestContact недоступен в этой версии Telegram';
                 resultDiv.style.backgroundColor = '#fff3cd';
                 resultDiv.style.color = '#856404';
