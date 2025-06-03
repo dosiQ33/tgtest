@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Request Test</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .button {
+            background-color: var(--tg-theme-button-color, #007acc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .button:hover {
+            opacity: 0.8;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .info {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: var(--tg-theme-hint-color, #999999);
+            color: var(--tg-theme-bg-color, #ffffff);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Тест requestContact()</h1>
+        
+        <div class="info">
+            Этот мини-апп тестирует метод requestContact() из Telegram Bot API 6.9+
+        </div>
+        
+        <button class="button" onclick="testRequestContact()">
+            Запросить контакт
+        </button>
+        
+        <div class="result" id="result">
+            Нажмите кнопку выше, чтобы протестировать метод
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Функция для тестирования requestContact
+        function testRequestContact() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Запрос отправлен... Ждем ответа пользователя';
+            
+            // Проверяем, доступен ли метод
+            if (typeof tg.requestContact === 'function') {
+                try {
+                    // Вызываем метод с callback функцией
+                    tg.requestContact(function(granted) {
+                        if (granted) {
+                            // Получаем номер телефона из объекта контакта
+                            const contact = tg.initDataUnsafe?.user?.phone_number || 
+                                          tg.initData?.user?.phone_number || 
+                                          'Номер недоступен';
+                            
+                            resultDiv.innerHTML = `✅ Пользователь поделился номером телефона!<br><br><strong>Ваш номер телефона: ${contact}</strong>`;
+                            resultDiv.style.backgroundColor = '#d4edda';
+                            resultDiv.style.color = '#155724';
+                            
+                            // Дополнительно выводим в консоль для отладки
+                            console.log('Contact granted!');
+                            console.log('User data:', tg.initDataUnsafe?.user);
+                            console.log('Phone number:', contact);
+                        } else {
+                            resultDiv.innerHTML = '❌ Пользователь отказался делиться номером';
+                            resultDiv.style.backgroundColor = '#f8d7da';
+                            resultDiv.style.color = '#721c24';
+                        }
+                    });
+                } catch (error) {
+                    resultDiv.innerHTML = '❌ Ошибка при вызове метода: ' + error.message;
+                    resultDiv.style.backgroundColor = '#f8d7da';
+                    resultDiv.style.color = '#721c24';
+                }
+            } else {
+                resultDiv.innerHTML = '❌ Метод requestContact недоступен в этой версии Telegram';
+                resultDiv.style.backgroundColor = '#fff3cd';
+                resultDiv.style.color = '#856404';
+            }
+        }
+        
+        // Дополнительная информация для отладки
+        console.log('Telegram WebApp version:', tg.version);
+        console.log('Available methods:', Object.keys(tg));
+    </script>
+</body>
+</html>
